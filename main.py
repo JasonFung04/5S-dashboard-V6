@@ -100,16 +100,21 @@ def toggle_sidebar(open_clicks, open_mobile_clicks, close_clicks, is_open):
     return no_update, no_update
 
 # Month selection callback
+# 替换main.py中的 initialize_data_on_load 回调函数
 @app.callback(
     Output('data-store', 'data', allow_duplicate=True),
     Input('current-month', 'data'),
-    prevent_initial_call='initial_duplicate'  # 允许初始调用
+    prevent_initial_call=True  # 改为False，允许初始调用
 )
 def initialize_data_on_load(current_month):
     if current_month:
+        print(f"尝试加载数据: {current_month}")  # 添加调试信息
         df_month = data_manager.load_data(current_month)
-        if df_month is not None:
+        if df_month is not None and not df_month.empty:
+            print(f"成功加载数据: {len(df_month)} 行")
             return df_month.to_dict('index')
+        else:
+            print(f"未找到数据: {current_month}")
     return {}
 
 # File upload callback
@@ -267,10 +272,39 @@ def display_layout(device_type, data_dict, week_cols_data, selected_sites, selec
 
 # 添加到 main.py 的回调函数部分
 
-
+# 在main.py中添加这个回调函数
+@app.callback(
+    Output('current-month', 'data'),
+    Input('month-selector', 'value'),
+    prevent_initial_call=True
+)
+def update_current_month(selected_month):
+    if selected_month:
+        return selected_month
+    return no_update
 
 # Run the app
+# 在main.py的最后，替换 if __name__ == '__main__': 部分
 if __name__ == '__main__':
+    # 添加调试信息
+    print("=== 5S Dashboard 启动调试 ===")
+    data_manager.debug_connection()
+    
+    # 测试加载当前月份数据
+    print(f"\n测试加载默认月份数据: {current_year_month}")
+    test_data = data_manager.load_data(current_year_month)
+    if test_data is not None and not test_data.empty:
+        print(f"✅ 默认数据加载成功: {len(test_data)} 行")
+        print(f"站点列表: {list(test_data.index)}")
+    else:
+        print("❌ 默认数据加载失败")
+        
+        # 检查可用的月份
+        available_months = data_manager.get_available_months()
+        print(f"可用月份: {available_months}")
+    
+    print("=== 调试完成 ===\n")
+    
     # For Render deployment
     port = int(os.environ.get('PORT', 8050))
     app.run_server(host='0.0.0.0', port=port, debug=False)
