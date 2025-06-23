@@ -42,10 +42,30 @@ line_styles = {
     'SC_avg': 'solid',          # Average uses solid line
 }
 
+
 def make_line_chart_with_data(df_data, week_cols, selected_sites, font_size=16, height=400):
     """Create line chart with selected sites, using improved color scheme"""
     traces = []
     x_labels = ["Week 1", "Week 2", "Week 3", "Week 4"]
+
+    if df_data.empty:
+        # 创建一个空图表
+        fig = go.Figure()
+        fig.update_layout(
+            title="No data available. Please upload data first.",
+            xaxis_title='Week',
+            yaxis_title='Score (%)',
+            yaxis=dict(range=[75, 105]),
+            plot_bgcolor='#FAFAFA',
+            paper_bgcolor='white',
+            font=dict(family="Arial, sans-serif", size=font_size, color='#374151'),
+        )
+        return dcc.Graph(
+            figure=fig,
+            style={"height": f"{height}px", "width": "100%", "margin": "0 auto"},
+            config={"responsive": True, "displayModeBar": False}
+        )
+
     
     # Only show selected sites
     for site in selected_sites:
@@ -173,6 +193,33 @@ def make_line_chart_with_data(df_data, week_cols, selected_sites, font_size=16, 
 
 def make_gauge(siteinfo, width=180, font_small=12):
     """Create gauge component"""
+
+    # 检查是否有数据
+    if not siteinfo or 'Monthly Performance' not in siteinfo:
+        return html.Div([
+            html.Div("No Data", style={
+                'textAlign': 'center',
+                'color': '#6B7280',
+                'fontSize': f'{font_small+3}px',
+                'fontFamily': 'Arial, sans-serif',
+                'padding': '50px 20px'
+            })
+        ], style={
+            'width': f'{width}px',
+            'minHeight': '280px',
+            'display': 'inline-block',
+            'background': 'white',
+            'borderRadius': '12px',
+            'border': '2px solid #E5E7EB',
+            'margin': '8px',
+            'padding': '16px',
+            'textAlign': 'center',
+            'justifyContent': 'center',
+            'alignItems': 'center'
+        })
+
+
+
     value = siteinfo['Monthly Performance']
     site_name = siteinfo['Site']
     
@@ -704,6 +751,26 @@ def make_sidebar_toggle_mobile():
 def prepare_dashboard_data(df_data, selected_gauges):
     """Prepare dashboard data for selected gauges only"""
     # Only show selected gauges
+
+    # 检查数据是否为空
+    if df_data.empty:
+        return []
+    
+    # Only show selected gauges
+    data = []
+    for k in df_data.index:
+        if k in selected_gauges:
+            site_data = {
+                'Site': k,
+                'Max/Month': df_data.loc[k]["Max/Month"],
+                'Completed': int(df_data.loc[k]["Completed"]) if pd.notna(df_data.loc[k]["Completed"]) else 0,
+                'Missing': df_data.loc[k]["Missing"] if pd.notna(df_data.loc[k]["Missing"]) else 0,
+                'Monthly Performance': df_data.loc[k]["Monthly Performance"] if pd.notna(df_data.loc[k]["Monthly Performance"]) else 0
+            }
+            data.append(site_data)
+    
+    return data
+    
     data = [
         {
             'Site': k,
@@ -716,10 +783,19 @@ def prepare_dashboard_data(df_data, selected_gauges):
     
     return data
 
+
+
 def prepare_ranking_data(df_data, selected_sites):
     """Prepare ranking data for selected sites only"""
+    # 检查数据是否为空
+    if df_data.empty:
+        return pd.DataFrame(columns=['Rank', 'Site', 'Score'])
+    
     # Filter data to only include selected sites
     filtered_df = df_data.loc[df_data.index.intersection(selected_sites)]
+    
+    if filtered_df.empty:
+        return pd.DataFrame(columns=['Rank', 'Site', 'Score'])
     
     # Sort data by Monthly Performance for ranking
     df_sorted = filtered_df.sort_values(by="Monthly Performance", ascending=False)
@@ -733,8 +809,15 @@ def prepare_ranking_data(df_data, selected_sites):
 
 def prepare_missing_data(df_data, selected_sites):
     """Prepare missing clock data for selected sites only"""
+    # 检查数据是否为空
+    if df_data.empty:
+        return pd.DataFrame(columns=['Rank', 'Site', 'Missing'])
+    
     # Filter data to only include selected sites
     filtered_df = df_data.loc[df_data.index.intersection(selected_sites)]
+    
+    if filtered_df.empty:
+        return pd.DataFrame(columns=['Rank', 'Site', 'Missing'])
     
     missing_clock_data = pd.DataFrame({
         'Rank': range(1, len(filtered_df) + 1),
@@ -746,6 +829,56 @@ def prepare_missing_data(df_data, selected_sites):
 
 def layout_pc(df_data, week_cols, selected_sites, selected_gauges, current_month, available_months):
     """PC version layout"""
+    
+    # 检查数据是否为空
+    if df_data.empty:
+        return html.Div([
+            make_sidebar(),
+            make_sidebar_toggle_pc(),
+            html.Div([
+                make_sidebar_toggle_mobile()
+            ], style={'display': 'none'}),
+            html.Div([
+                html.Div([
+                    html.H1("5S Score Dashboard", style={
+                        'textAlign': 'center',
+                        'color': 'white',
+                        'marginTop': '0',
+                        'marginBottom': '8px',
+                        'fontSize': '2.5rem',
+                        'fontFamily': 'Arial, sans-serif',
+                        'fontWeight': 'bold'
+                    }),
+                    html.P(f"No data available for {current_month}. Please upload data first.", style={
+                        'textAlign': 'center',
+                        'color': 'white',
+                        'fontSize': '1.1rem',
+                        'margin': '0 0 32px 0',
+                        'fontFamily': 'Arial, sans-serif'
+                    })
+                ], style={
+                    'background': 'linear-gradient(135deg, #1E3A8A 0%, #0369A1 100%)',
+                    'color': 'white',
+                    'padding': '32px 20px',
+                    'marginBottom': '32px'
+                }),
+                html.Div([
+                    html.H2("Please upload data using the Data Manager", style={
+                        'textAlign': 'center',
+                        'color': '#1F2937',
+                        'fontSize': '1.8rem',
+                        'marginBottom': '24px',
+                        'fontFamily': 'Arial, sans-serif'
+                    }),
+                ], style={'textAlign': 'center', 'padding': '50px'})
+            ])
+        ], style={
+            'background': '#F9FAFB',
+            'minHeight': '100vh',
+            'fontFamily': 'Arial, sans-serif'
+        })
+    
+    # 如果有数据，继续正常渲染
     data = prepare_dashboard_data(df_data, selected_gauges)
     rank_data = prepare_ranking_data(df_data, selected_sites)
     missing_clock_data = prepare_missing_data(df_data, selected_sites)
@@ -982,11 +1115,70 @@ def layout_pc(df_data, week_cols, selected_sites, selected_gauges, current_month
         'fontFamily': 'Arial, sans-serif'
     })
 
+# components.py 中完整的 layout_mobile 函数
+
 def layout_mobile(df_data, week_cols, selected_sites, selected_gauges, current_month, available_months):
     """Mobile version layout"""
+    
+    # 检查数据是否为空
+    if df_data.empty:
+        return html.Div([
+            make_sidebar(),
+            html.Div([
+                make_sidebar_toggle_pc()
+            ], style={'display': 'none'}),
+            make_sidebar_toggle_mobile(),
+            html.Div([
+                html.H1("5S Score Dashboard", style={
+                    'textAlign': 'center',
+                    'color': 'white',
+                    'marginTop': '0',
+                    'marginBottom': '4px',
+                    'fontSize': '6vw',
+                    'fontFamily': 'Arial, sans-serif',
+                    'fontWeight': 'bold'
+                }),
+                html.P(f"No data for {current_month}", style={
+                    'textAlign': 'center',
+                    'color': 'white',
+                    'fontSize': '3.5vw',
+                    'margin': '0',
+                    'fontFamily': 'Arial, sans-serif'
+                })
+            ], style={
+                'background': 'linear-gradient(135deg, #1E3A8A 0%, #0369A1 100%)',
+                'padding': '20px 15px',
+                'marginBottom': '20px'
+            }),
+            html.Div([
+                html.H2("Please upload data", style={
+                    'textAlign': 'center',
+                    'color': '#1F2937',
+                    'fontSize': '4.5vw',
+                    'marginBottom': '15px',
+                    'fontFamily': 'Arial, sans-serif'
+                }),
+                html.P("Use the settings button to upload your data.", style={
+                    'textAlign': 'center',
+                    'color': '#6B7280',
+                    'fontSize': '3.5vw',
+                    'fontFamily': 'Arial, sans-serif'
+                })
+            ], style={'textAlign': 'center', 'padding': '30px'})
+        ], style={
+            'background': '#F9FAFB',
+            'minHeight': '100vh',
+            'fontFamily': 'Arial, sans-serif'
+        })
+
+    # 如果有数据，继续正常渲染
     data = prepare_dashboard_data(df_data, selected_gauges)
     rank_data = prepare_ranking_data(df_data, selected_sites)
     missing_clock_data = prepare_missing_data(df_data, selected_sites)
+
+    # 检查是否有有效的选择
+    available_sites = df_data.index.tolist()
+    valid_sites_for_chart = [site for site in selected_sites if site in available_sites]
 
     return html.Div([
         # Sidebar
@@ -1033,7 +1225,7 @@ def layout_mobile(df_data, week_cols, selected_sites, selected_gauges, current_m
                     'fontSize': '4.5vw',
                     'fontFamily': 'Arial, sans-serif'
                 }),
-                html.P("Default shows HK_avg and SC_avg, you can select other sites in settings", style={
+                html.P(f"Showing {len(valid_sites_for_chart)} sites" if valid_sites_for_chart else "No sites selected", style={
                     'margin': '0 0 10px 0',
                     'color': '#6B7280',
                     'fontSize': '3vw',
@@ -1058,7 +1250,15 @@ def layout_mobile(df_data, week_cols, selected_sites, selected_gauges, current_m
                 'marginBottom': '15px',
                 'fontFamily': 'Arial, sans-serif'
             }),
-            html.Div([make_gauge(d, width=140, font_small=9) for d in data],
+            html.Div([make_gauge(d, width=140, font_small=9) for d in data] if data else [
+                html.P("No gauges to display", style={
+                    'textAlign': 'center',
+                    'color': '#6B7280',
+                    'fontSize': '3.5vw',
+                    'fontFamily': 'Arial, sans-serif',
+                    'padding': '30px'
+                })
+            ],
                      style={
                          'display': 'flex',
                          'flexWrap': 'wrap',
@@ -1078,8 +1278,8 @@ def layout_mobile(df_data, week_cols, selected_sites, selected_gauges, current_m
                 'fontFamily': 'Arial, sans-serif'
             }),
             dash_table.DataTable(
-                data=rank_data.to_dict('records'),
-                columns=[{'name': col, 'id': col} for col in rank_data.columns],
+                data=rank_data.to_dict('records') if not rank_data.empty else [],
+                columns=[{'name': col, 'id': col} for col in ['Rank', 'Site', 'Score']],
                 style_table={
                     'overflowY': 'auto',
                     'width': '100%',
@@ -1125,7 +1325,13 @@ def layout_mobile(df_data, week_cols, selected_sites, selected_gauges, current_m
                         "fontWeight": "bold"
                     }
                 ]
-            ),
+            ) if not rank_data.empty else html.P("No ranking data available.", style={
+                'textAlign': 'center',
+                'color': '#6B7280',
+                'fontSize': '3.5vw',
+                'fontFamily': 'Arial, sans-serif',
+                'padding': '30px'
+            }),
         ], style={
             'margin': '0 10px 20px 10px',
             'backgroundColor': 'white',
@@ -1144,8 +1350,8 @@ def layout_mobile(df_data, week_cols, selected_sites, selected_gauges, current_m
                 'fontFamily': 'Arial, sans-serif'
             }),
             dash_table.DataTable(
-                data=missing_clock_data.to_dict('records'),
-                columns=[{'name': col, 'id': col} for col in missing_clock_data.columns],
+                data=missing_clock_data.to_dict('records') if not missing_clock_data.empty else [],
+                columns=[{'name': col, 'id': col} for col in ['Rank', 'Site', 'Missing']],
                 style_table={
                     'overflowY': 'auto',
                     'width': '100%',
@@ -1191,7 +1397,13 @@ def layout_mobile(df_data, week_cols, selected_sites, selected_gauges, current_m
                         "fontWeight": "bold"
                     }
                 ]
-            ),
+            ) if not missing_clock_data.empty else html.P("No missing clock data available.", style={
+                'textAlign': 'center',
+                'color': '#6B7280',
+                'fontSize': '3.5vw',
+                'fontFamily': 'Arial, sans-serif',
+                'padding': '30px'
+            }),
         ], style={
             'margin': '0 10px 30px 10px',
             'backgroundColor': 'white',
