@@ -275,4 +275,4 @@ def display_layout(device_type, data_dict, week_cols_data, selected_sites, selec
 if __name__ == '__main__':
     # For Render deployment
     port = int(os.environ.get('PORT', 8050))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run_server(host='0.0.0.0', port=port, debug=False)
