@@ -159,33 +159,30 @@ class GitHubDataManager:
         return None
     
     # 其他方法保持與原版相同...
-    def generate_month_options(self, months_back=12, months_forward=6):
-        """生成月份選項"""
+
+    def generate_month_options(self, start_year=2020, end_year=2040):
+        """生成月份選項 - 从2020年1月到2040年12月"""
         current_date = datetime.now()
+        current_year_month = current_date.strftime("%Y-%m")
         options = []
         
-        for i in range(months_back, 0, -1):
-            date = current_date - timedelta(days=30 * i)
-            year_month = date.strftime("%Y-%m")
-            month_name = date.strftime("%Y年%m月")
-            options.append({'label': month_name, 'value': year_month})
-        
-        current_year_month = current_date.strftime("%Y-%m")
-        current_month_name = current_date.strftime("%Y年%m月")
-        options.append({'label': f"{current_month_name} (當前)", 'value': current_year_month})
-        
-        for i in range(1, months_forward + 1):
-            future_year = current_date.year
-            future_month = current_date.month + i
-            while future_month > 12:
-                future_month -= 12
-                future_year += 1
-            
-            future_date = datetime(future_year, future_month, 1)
-            year_month = future_date.strftime("%Y-%m")
-            month_name = future_date.strftime("%Y年%m月")
-            options.append({'label': month_name, 'value': year_month})
-        
+        # 生成从start_year到end_year的所有月份
+        for year in range(start_year, end_year + 1):
+            for month in range(1, 13):
+                year_month = f"{year}-{month:02d}"
+                month_name = f"{year}年{month:02d}月"
+                
+                # 标记当前月份
+                if year_month == current_year_month:
+                    label = f"{month_name} (當前)"
+                else:
+                    label = month_name
+                
+                options.append({'label': label, 'value': year_month})
+    
+    # 按时间倒序排列（最新的在前面）
+        options.reverse()
+    
         return options
     
     def parse_excel_file(self, contents, filename):
