@@ -282,3 +282,84 @@ class GitHubDataManager:
                 return False, f"刪除本地數據時出錯: {str(e)}"
         else:
             return False, f"{year_month} 的本地數據不存在"
+        
+    # 在 GitHubDataManager 类中添加这个调试方法
+    def debug_connection(self):
+        """调试GitHub连接和配置"""
+        print("=== GitHub 配置调试 ===")
+        print(f"GitHub Token: {'已设置' if self.github_token else '未设置'}")
+        print(f"Repo Owner: {self.repo_owner}")
+        print(f"Repo Name: {self.repo_name}")
+        print(f"API Base: {self.api_base}")
+        
+        if not self.github_token:
+            print("❌ GitHub token 未设置，将使用本地存储")
+            return False
+        
+        try:
+            # 测试GitHub API连接
+            url = f"{self.api_base}"
+            response = requests.get(url, headers=self.headers)
+            print(f"GitHub API 连接测试: {response.status_code}")
+            
+            if response.status_code == 200:
+                print("✅ GitHub API 连接成功")
+                
+                # 检查data目录
+                data_url = f"{self.api_base}/contents/data"
+                data_response = requests.get(data_url, headers=self.headers)
+                print(f"Data 目录检查: {data_response.status_code}")
+                
+                if data_response.status_code == 200:
+                    files = data_response.json()
+                    print(f"找到 {len(files)} 个文件:")
+                    for file in files:
+                        if file['name'].endswith('.json'):
+                            print(f"  - {file['name']}")
+                else:
+                    print("❌ Data 目录不存在或无权限访问")
+                    
+            else:
+                print(f"❌ GitHub API 连接失败: {response.status_code}")
+                if response.status_code == 401:
+                    print("可能是token权限问题")
+                elif response.status_code == 404:
+                    print("可能是repository不存在")
+                    
+        except Exception as e:
+            print(f"❌ 连接异常: {e}")
+            return False
+        
+        return True
+
+    # 修改 load_data 方法，添加更多调试信息
+    def load_data(self, year_month):
+        """從 GitHub 加載數據"""
+        print(f"开始加载数据: {year_month}")
+        
+        if not self.github_token:
+            print("使用本地存储模式")
+            return self._load_local_fallback(year_month)
+        
+        try:
+            file_path = self.get_filename(year_month)
+            url = f"{self.api_base}/contents/{file_path}"
+            print(f"请求URL: {url}")
+            
+            response = requests.get(url, headers=self.headers)
+            print(f"响应状态: {response.status_code}")
+            
+            if response.status_code == 200:
+                file_data = response.json()
+                content = base64.b64decode(file_data['content']).decode('utf-8')
+                data_dict = json.loads(content)
+                df = pd.DataFrame.from_dict(data_dict, orient='index')
+                print(f"成功加载数据: {len(df)} 行, {len(df.columns)} 列")
+                return df
+            else:
+                print(f"文件不存在或无权限: {response.status_code}")
+                return None
+                
+        except Exception as e:
+            print(f"加载数据出错: {e}")
+            return self._load_local_fallback(year_month)
