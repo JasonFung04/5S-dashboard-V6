@@ -1,4 +1,6 @@
-# components.py - UI Components Definition
+# components.py - Part 1 (Lines 1-700)
+# UI Components Definition
+
 from dash import dcc, html, dash_table
 import plotly.graph_objs as go
 import pandas as pd
@@ -354,13 +356,15 @@ def make_gauge(siteinfo, width=180, font_small=12):
     })
 
 def make_sidebar():
-    """Create sidebar component"""
+    """Create sidebar component with dynamic month selection"""
     from github_storage_manager import GitHubDataManager
     data_manager = GitHubDataManager()
+    
+    # Get month options
     month_options = data_manager.generate_month_options()
-
+    
     def get_last_month():
-        """获取上个月的年月字符串"""
+        """Get last month's year-month string"""
         today = datetime.now()
         if today.month == 1:
             last_month = datetime(today.year - 1, 12, 1)
@@ -368,7 +372,7 @@ def make_sidebar():
             last_month = datetime(today.year, today.month - 1, 1)
         return last_month.strftime("%Y-%m")
 
-    current_month = get_last_month()  # 默认显示上个月
+    default_month = get_last_month()  # Default to last month
     
     # Updated site options list
     all_site_options = [
@@ -451,7 +455,7 @@ def make_sidebar():
                 'marginBottom': '20px'
             }),
             
-            # Month Selection Section
+            # Month Selection Section - Updated with better description
             html.Div([
                 html.H4("View Historical Data", style={
                     'fontSize': '16px',
@@ -459,15 +463,48 @@ def make_sidebar():
                     'marginBottom': '10px',
                     'fontFamily': 'Arial, sans-serif'
                 }),
+                html.P("Select a month to view historical 5S performance data", style={
+                    'fontSize': '13px',
+                    'color': '#6B7280',
+                    'margin': '0 0 10px 0',
+                    'fontFamily': 'Arial, sans-serif'
+                }),
                 dcc.Dropdown(
                     id='month-selector',
                     options=month_options,
-                    value=current_month,
+                    value=default_month,  # Set default value
                     placeholder="Select Year-Month",
-                    style={'marginBottom': '15px'}
+                    style={'marginBottom': '10px'},
+                    clearable=False  # Prevent clearing the selection
                 ),
+                html.Div([
+                    html.I(className='fas fa-info-circle', style={
+                        'fontSize': '12px',
+                        'marginRight': '5px',
+                        'color': '#6B7280'
+                    }),
+                    html.Span(f"Default: {default_month} (Last Month)", style={
+                        'fontSize': '12px',
+                        'color': '#6B7280',
+                        'fontStyle': 'italic'
+                    })
+                ], style={'marginBottom': '10px'}),
+                html.Div([
+                    html.I(className='fas fa-refresh', style={
+                        'fontSize': '12px',
+                        'marginRight': '5px',
+                        'color': '#059669'
+                    }),
+                    html.Span("Refresh page to return to default month", style={
+                        'fontSize': '12px',
+                        'color': '#059669',
+                        'fontStyle': 'italic'
+                    })
+                ])
             ], style={'marginBottom': '30px'}),
-            
+
+            # components.py - Part 2 (Lines 701-1400)
+
             # Site Selection Section for Line Chart
             html.Div([
                 html.H4("Line Chart Site Selection", style={
@@ -583,7 +620,7 @@ def make_sidebar():
                     dcc.Dropdown(
                         id='upload-month-selector',
                         options=month_options,
-                        value=current_month,
+                        value=default_month,
                         placeholder="Select Year-Month",
                         style={'marginBottom': '15px'}
                     ),
@@ -750,9 +787,7 @@ def make_sidebar_toggle_mobile():
 
 def prepare_dashboard_data(df_data, selected_gauges):
     """Prepare dashboard data for selected gauges only"""
-    # Only show selected gauges
-
-    # 检查数据是否为空
+    # Check if data is empty
     if df_data.empty:
         return []
     
@@ -770,24 +805,10 @@ def prepare_dashboard_data(df_data, selected_gauges):
             data.append(site_data)
     
     return data
-    
-    data = [
-        {
-            'Site': k,
-            'Max/Month': df_data.loc[k]["Max/Month"],
-            'Completed': int(df_data.loc[k]["Completed"]),
-            'Missing': df_data.loc[k]["Missing"],
-            'Monthly Performance': df_data.loc[k]["Monthly Performance"]
-        } for k in df_data.index if k in selected_gauges
-    ]
-    
-    return data
-
-
 
 def prepare_ranking_data(df_data, selected_sites):
     """Prepare ranking data for selected sites only"""
-    # 检查数据是否为空
+    # Check if data is empty
     if df_data.empty:
         return pd.DataFrame(columns=['Rank', 'Site', 'Score'])
     
@@ -809,7 +830,7 @@ def prepare_ranking_data(df_data, selected_sites):
 
 def prepare_missing_data(df_data, selected_sites):
     """Prepare missing clock data for selected sites only"""
-    # 检查数据是否为空
+    # Check if data is empty
     if df_data.empty:
         return pd.DataFrame(columns=['Rank', 'Site', 'Missing'])
     
@@ -827,10 +848,13 @@ def prepare_missing_data(df_data, selected_sites):
     
     return missing_clock_data
 
+
+# components.py - Part 3 (Lines 1401-2100)
+
 def layout_pc(df_data, week_cols, selected_sites, selected_gauges, current_month, available_months):
     """PC version layout"""
     
-    # 检查数据是否为空
+    # Check if data is empty
     if df_data.empty:
         return html.Div([
             make_sidebar(),
@@ -878,7 +902,7 @@ def layout_pc(df_data, week_cols, selected_sites, selected_gauges, current_month
             'fontFamily': 'Arial, sans-serif'
         })
     
-    # 如果有数据，继续正常渲染
+    # If data exists, continue normal rendering
     data = prepare_dashboard_data(df_data, selected_gauges)
     rank_data = prepare_ranking_data(df_data, selected_sites)
     missing_clock_data = prepare_missing_data(df_data, selected_sites)
@@ -1115,12 +1139,12 @@ def layout_pc(df_data, week_cols, selected_sites, selected_gauges, current_month
         'fontFamily': 'Arial, sans-serif'
     })
 
-# components.py 中完整的 layout_mobile 函数
+# components.py - Part 4 (Lines 2101-end)
 
 def layout_mobile(df_data, week_cols, selected_sites, selected_gauges, current_month, available_months):
     """Mobile version layout"""
     
-    # 检查数据是否为空
+    # Check if data is empty
     if df_data.empty:
         return html.Div([
             make_sidebar(),
@@ -1171,12 +1195,12 @@ def layout_mobile(df_data, week_cols, selected_sites, selected_gauges, current_m
             'fontFamily': 'Arial, sans-serif'
         })
 
-    # 如果有数据，继续正常渲染
+    # If data exists, continue normal rendering
     data = prepare_dashboard_data(df_data, selected_gauges)
     rank_data = prepare_ranking_data(df_data, selected_sites)
     missing_clock_data = prepare_missing_data(df_data, selected_sites)
 
-    # 检查是否有有效的选择
+    # Check if there are valid selections
     available_sites = df_data.index.tolist()
     valid_sites_for_chart = [site for site in selected_sites if site in available_sites]
 
