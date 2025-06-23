@@ -13,7 +13,7 @@ class GitHubDataManager:
         self.repo_name = os.getenv('GITHUB_REPO_NAME', '5s-dashboard-data')
         self.branch = 'main'
         
-        # GitHub API 基礎 URL
+        # GitHub API base URL
         self.api_base = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}"
         
         self.headers = {
@@ -22,11 +22,11 @@ class GitHubDataManager:
         }
     
     def get_filename(self, year_month):
-        """獲取文件路徑"""
+        """Get file path"""
         return f"data/data_{year_month}.json"
     
     def save_data(self, year_month, df):
-        """保存數據到 GitHub"""
+        """Save data to GitHub"""
         if not self.github_token:
             print("GitHub token not found, using local storage")
             return self._save_local_fallback(year_month, df)
@@ -35,12 +35,12 @@ class GitHubDataManager:
             data_dict = df.to_dict('index')
             content = json.dumps(data_dict, ensure_ascii=False, indent=2)
             
-            # 編碼為 base64
+            # Encode to base64
             content_encoded = base64.b64encode(content.encode('utf-8')).decode('utf-8')
             
             file_path = self.get_filename(year_month)
             
-            # 檢查文件是否存在
+            # Check if file exists
             sha = self._get_file_sha(file_path)
             
             payload = {
@@ -67,31 +67,38 @@ class GitHubDataManager:
             return self._save_local_fallback(year_month, df)
     
     def load_data(self, year_month):
-        """從 GitHub 加載數據"""
+        """Load data from GitHub"""
+        print(f"Loading data for: {year_month}")
+        
         if not self.github_token:
+            print("Using local storage mode")
             return self._load_local_fallback(year_month)
         
         try:
             file_path = self.get_filename(year_month)
             url = f"{self.api_base}/contents/{file_path}"
+            print(f"Request URL: {url}")
             
             response = requests.get(url, headers=self.headers)
+            print(f"Response status: {response.status_code}")
             
             if response.status_code == 200:
                 file_data = response.json()
                 content = base64.b64decode(file_data['content']).decode('utf-8')
                 data_dict = json.loads(content)
                 df = pd.DataFrame.from_dict(data_dict, orient='index')
+                print(f"Successfully loaded data: {len(df)} rows, {len(df.columns)} columns")
                 return df
             else:
+                print(f"File not found or no permission: {response.status_code}")
                 return None
                 
         except Exception as e:
-            print(f"Error loading from GitHub: {e}")
+            print(f"Error loading data: {e}")
             return self._load_local_fallback(year_month)
     
     def data_exists(self, year_month):
-        """檢查數據是否存在"""
+        """Check if data exists"""
         if not self.github_token:
             return False
         
@@ -104,7 +111,7 @@ class GitHubDataManager:
             return False
     
     def get_available_months(self):
-        """獲取所有可用月份"""
+        """Get all available months"""
         if not self.github_token:
             return []
         
@@ -117,7 +124,7 @@ class GitHubDataManager:
                 months = []
                 for file in files:
                     if file['name'].startswith('data_') and file['name'].endswith('.json'):
-                        month = file['name'][5:-5]  # 移除 'data_' 和 '.json'
+                        month = file['name'][5:-5]  # Remove 'data_' and '.json'
                         months.append(month)
                 
                 months.sort(reverse=True)
@@ -130,7 +137,7 @@ class GitHubDataManager:
             return []
     
     def _get_file_sha(self, file_path):
-        """獲取文件的 SHA (用於更新)"""
+        """Get file SHA (for updating)"""
         try:
             url = f"{self.api_base}/contents/{file_path}"
             response = requests.get(url, headers=self.headers)
@@ -141,7 +148,7 @@ class GitHubDataManager:
         return None
     
     def _save_local_fallback(self, year_month, df):
-        """本地存儲回退方案"""
+        """Local storage fallback"""
         os.makedirs('dashboard_data', exist_ok=True)
         filename = f"dashboard_data/data_{year_month}.json"
         data_dict = df.to_dict('index')
@@ -150,44 +157,41 @@ class GitHubDataManager:
         return True
     
     def _load_local_fallback(self, year_month):
-        """本地加載回退方案"""
+        """Local loading fallback"""
         filename = f"dashboard_data/data_{year_month}.json"
         if os.path.exists(filename):
             with open(filename, 'r', encoding='utf-8') as f:
                 data_dict = json.load(f)
             return pd.DataFrame.from_dict(data_dict, orient='index')
         return None
-    
-    # 其他方法保持與原版相同...
 
     def generate_month_options(self, start_year=2020, end_year=2040):
-        """生成月份選項 - 从2020年1月到2040年12月"""
+        """Generate month options - from January 2020 to December 2040"""
         current_date = datetime.now()
         current_year_month = current_date.strftime("%Y-%m")
         options = []
         
-        # 生成从start_year到end_year的所有月份
+        # Generate all months from start_year to end_year
         for year in range(start_year, end_year + 1):
             for month in range(1, 13):
                 year_month = f"{year}-{month:02d}"
                 month_name = f"{year}年{month:02d}月"
                 
-                # 标记当前月份
+                # Mark current month
                 if year_month == current_year_month:
                     label = f"{month_name} (當前)"
                 else:
                     label = month_name
                 
                 options.append({'label': label, 'value': year_month})
-    
-    # 按时间倒序排列（最新的在前面）
-        options.reverse()
-    
-        return options
 
+        # Sort in reverse chronological order (newest first)
+        options.reverse()
+
+        return options  # FIXED: Added missing return statement
 
     def parse_excel_file(self, contents, filename):
-        """解析 Excel 文件 - 移除默认数据填充"""
+        """Parse Excel file - ensure HK_avg and SC_avg exist"""
         try:
             content_type, content_string = contents.split(',')
             decoded = base64.b64decode(content_string)
@@ -195,31 +199,36 @@ class GitHubDataManager:
             if 'xlsx' in filename or 'xls' in filename:
                 df_uploaded = pd.read_excel(io.BytesIO(decoded))
             else:
-                return None, "請上傳Excel文件 (.xlsx 或 .xls)"
+                return None, "Please upload Excel file (.xlsx or .xls)"
             
             required_cols = ['Site', 'Monthly Performance', 'Max/Month', 'Completed', 'Missing', 
                             'Week 1', 'Week 2', 'Week 3', 'Week 4']
             
             if not all(col in df_uploaded.columns for col in required_cols):
                 missing_cols = [col for col in required_cols if col not in df_uploaded.columns]
-                return None, f"缺少必需的列: {', '.join(missing_cols)}"
+                return None, f"Missing required columns: {', '.join(missing_cols)}"
             
             df_uploaded = df_uploaded.set_index('Site')
             
-            # 確保HK_avg存在，如果不存在則添加
-
+            # Ensure HK_avg exists, add if missing
+            if 'HK_avg' not in df_uploaded.index:
+                default_row = {col: 0 for col in df_uploaded.columns}
+                df_uploaded.loc['HK_avg'] = default_row
+                print("Added missing HK_avg with default values")
             
-            # 確保SC_avg存在，如果不存在則添加
-
-
+            # Ensure SC_avg exists, add if missing  
+            if 'SC_avg' not in df_uploaded.index:
+                default_row = {col: 0 for col in df_uploaded.columns}
+                df_uploaded.loc['SC_avg'] = default_row
+                print("Added missing SC_avg with default values")
             
-            return df_uploaded, "文件上傳成功！"
+            return df_uploaded, "File uploaded successfully!"
             
         except Exception as e:
-            return None, f"解析文件時出錯: {str(e)}"
+            return None, f"Error parsing file: {str(e)}"
     
     def delete_month_data(self, year_month):
-        """刪除指定年月的數據"""
+        """Delete data for specified year-month"""
         if not self.github_token:
             return self._delete_local_fallback(year_month)
         
@@ -228,7 +237,7 @@ class GitHubDataManager:
             sha = self._get_file_sha(file_path)
             
             if not sha:
-                return False, f"{year_month} 的數據不存在"
+                return False, f"Data for {year_month} does not exist"
             
             payload = {
                 'message': f'Delete 5S data for {year_month}',
@@ -240,19 +249,19 @@ class GitHubDataManager:
             response = requests.delete(url, headers=self.headers, json=payload)
             
             if response.status_code == 200:
-                return True, f"已刪除 {year_month} 的GitHub數據"
+                return True, f"Deleted GitHub data for {year_month}"
             else:
-                return False, f"刪除GitHub數據失敗: {response.status_code}"
+                return False, f"Failed to delete GitHub data: {response.status_code}"
                 
         except Exception as e:
-            return False, f"刪除數據時出錯: {str(e)}"
+            return False, f"Error deleting data: {str(e)}"
     
     def export_month_data(self, year_month):
-        """導出指定年月的數據為Excel格式"""
+        """Export data for specified year-month as Excel format"""
         df = self.load_data(year_month)
         
         if df is None:
-            return None, f"{year_month} 的數據不存在"
+            return None, f"Data for {year_month} does not exist"
         
         try:
             output = io.BytesIO()
@@ -266,100 +275,67 @@ class GitHubDataManager:
                 'filename': f"5S_Dashboard_{year_month}.xlsx",
                 'type': "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 'base64': True
-            }, "導出成功"
+            }, "Export successful"
             
         except Exception as e:
-            return None, f"導出數據時出錯: {str(e)}"
+            return None, f"Error exporting data: {str(e)}"
     
     def _delete_local_fallback(self, year_month):
-        """本地刪除回退方案"""
+        """Local deletion fallback"""
         filename = f"dashboard_data/data_{year_month}.json"
         if os.path.exists(filename):
             try:
                 os.remove(filename)
-                return True, f"已刪除 {year_month} 的本地數據"
+                return True, f"Deleted local data for {year_month}"
             except Exception as e:
-                return False, f"刪除本地數據時出錯: {str(e)}"
+                return False, f"Error deleting local data: {str(e)}"
         else:
-            return False, f"{year_month} 的本地數據不存在"
+            return False, f"Local data for {year_month} does not exist"
         
-    # 在 GitHubDataManager 类中添加这个调试方法
     def debug_connection(self):
-        """调试GitHub连接和配置"""
-        print("=== GitHub 配置调试 ===")
-        print(f"GitHub Token: {'已设置' if self.github_token else '未设置'}")
+        """Debug GitHub connection and configuration"""
+        print("=== GitHub Configuration Debug ===")
+        print(f"GitHub Token: {'Set' if self.github_token else 'Not Set'}")
         print(f"Repo Owner: {self.repo_owner}")
         print(f"Repo Name: {self.repo_name}")
         print(f"API Base: {self.api_base}")
         
         if not self.github_token:
-            print("❌ GitHub token 未设置，将使用本地存储")
+            print("❌ GitHub token not set, will use local storage")
             return False
         
         try:
-            # 测试GitHub API连接
+            # Test GitHub API connection
             url = f"{self.api_base}"
             response = requests.get(url, headers=self.headers)
-            print(f"GitHub API 连接测试: {response.status_code}")
+            print(f"GitHub API connection test: {response.status_code}")
             
             if response.status_code == 200:
-                print("✅ GitHub API 连接成功")
+                print("✅ GitHub API connection successful")
                 
-                # 检查data目录
+                # Check data directory
                 data_url = f"{self.api_base}/contents/data"
                 data_response = requests.get(data_url, headers=self.headers)
-                print(f"Data 目录检查: {data_response.status_code}")
+                print(f"Data directory check: {data_response.status_code}")
                 
                 if data_response.status_code == 200:
                     files = data_response.json()
-                    print(f"找到 {len(files)} 个文件:")
+                    print(f"Found {len(files)} files:")
                     for file in files:
                         if file['name'].endswith('.json'):
                             print(f"  - {file['name']}")
                 else:
-                    print("❌ Data 目录不存在或无权限访问")
+                    print("❌ Data directory does not exist or no access permission")
                     
             else:
-                print(f"❌ GitHub API 连接失败: {response.status_code}")
+                print(f"❌ GitHub API connection failed: {response.status_code}")
                 if response.status_code == 401:
-                    print("可能是token权限问题")
+                    print("Possible token permission issue")
                 elif response.status_code == 404:
-                    print("可能是repository不存在")
+                    print("Possible repository does not exist")
                     
         except Exception as e:
-            print(f"❌ 连接异常: {e}")
+            print(f"❌ Connection exception: {e}")
             return False
         
         return True
-
-    # 修改 load_data 方法，添加更多调试信息
-    def load_data(self, year_month):
-        """從 GitHub 加載數據"""
-        print(f"开始加载数据: {year_month}")
-        
-        if not self.github_token:
-            print("使用本地存储模式")
-            return self._load_local_fallback(year_month)
-        
-        try:
-            file_path = self.get_filename(year_month)
-            url = f"{self.api_base}/contents/{file_path}"
-            print(f"请求URL: {url}")
-            
-            response = requests.get(url, headers=self.headers)
-            print(f"响应状态: {response.status_code}")
-            
-            if response.status_code == 200:
-                file_data = response.json()
-                content = base64.b64decode(file_data['content']).decode('utf-8')
-                data_dict = json.loads(content)
-                df = pd.DataFrame.from_dict(data_dict, orient='index')
-                print(f"成功加载数据: {len(df)} 行, {len(df.columns)} 列")
-                return df
-            else:
-                print(f"文件不存在或无权限: {response.status_code}")
-                return None
-                
-        except Exception as e:
-            print(f"加载数据出错: {e}")
-            return self._load_local_fallback(year_month)
