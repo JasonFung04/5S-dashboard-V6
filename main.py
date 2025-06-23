@@ -3,7 +3,7 @@ from dash import dcc, html, Output, Input, State, callback_context, no_update
 import pandas as pd
 import base64
 import io
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import json
 import os
 from github_storage_manager import GitHubDataManager
@@ -39,7 +39,17 @@ data_manager = GitHubDataManager()
 df_default, week_cols = load_default_data()
 
 # Ensure default data exists for current month
-current_year_month = datetime.now().strftime("%Y-%m")
+def get_last_month():
+    """获取上个月的年月字符串"""
+    today = datetime.now()
+    if today.month == 1:
+        last_month = datetime(today.year - 1, 12, 1)
+    else:
+        last_month = datetime(today.year, today.month - 1, 1)
+    return last_month.strftime("%Y-%m")
+
+current_year_month = get_last_month()  # 默认显示上个月
+
 if not data_manager.data_exists(current_year_month):
     data_manager.save_data(current_year_month, df_default)
 
