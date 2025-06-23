@@ -184,9 +184,10 @@ class GitHubDataManager:
         options.reverse()
     
         return options
-    
+
+
     def parse_excel_file(self, contents, filename):
-        """解析 Excel 文件"""
+        """解析 Excel 文件 - 移除默认数据填充"""
         try:
             content_type, content_string = contents.split(',')
             decoded = base64.b64decode(content_string)
@@ -206,20 +207,11 @@ class GitHubDataManager:
             df_uploaded = df_uploaded.set_index('Site')
             
             # 確保HK_avg存在，如果不存在則添加
-            if 'HK_avg' not in df_uploaded.index:
-                hk_avg_row = pd.DataFrame({
-                    'Monthly Performance': [88.50], 'Max/Month': [150], 'Completed': [148], 'Missing': [2],
-                    'Week 1': [85.00], 'Week 2': [87.50], 'Week 3': [90.00], 'Week 4': [88.50]
-                }, index=['HK_avg'])
-                df_uploaded = pd.concat([df_uploaded, hk_avg_row])
+
             
             # 確保SC_avg存在，如果不存在則添加
-            if 'SC_avg' not in df_uploaded.index:
-                sc_avg_row = pd.DataFrame({
-                    'Monthly Performance': [87.00], 'Max/Month': [130], 'Completed': [126], 'Missing': [4],
-                    'Week 1': [84.75], 'Week 2': [87.88], 'Week 3': [88.50], 'Week 4': [87.13]
-                }, index=['SC_avg'])
-                df_uploaded = pd.concat([df_uploaded, sc_avg_row])
+
+
             
             return df_uploaded, "文件上傳成功！"
             
