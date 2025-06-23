@@ -5,39 +5,40 @@ import pandas as pd
 from datetime import datetime
 
 # Improved color scheme with clear distinction between HK and SC sites
+# 改进的颜色方案 - 更清晰的色彩区分
 color_map = {
-    # Hong Kong sites - Blue spectrum
-    'ELC': '#1E3A8A',           # Deep blue
-    'GGW': '#1D4ED8',           # Blue
-    'HSK': '#2563EB',           # Medium blue
-    'LFS': '#3B82F6',           # Light blue
-    'MAP': '#60A5FA',           # Lighter blue
-    'MTL': '#93C5FD',           # Very light blue
-    'STLC': '#1E40AF',          # Dark blue variant
-    'HK_avg': '#DC2626',        # Red - Hong Kong average, standout
+    # Hong Kong sites - 冷色调光谱，更易区分
+    'ELC': '#1E40AF',           # 深蓝
+    'GGW': '#0891B2',           # 青蓝
+    'HSK': '#059669',           # 绿色
+    'LFS': '#DC2626',           # 红色
+    'MAP': '#7C3AED',           # 紫色
+    'MTL': '#EA580C',           # 橙色
+    'STLC': '#BE185D',          # 玫红
+    'HK_avg': '#DC2626',        # 红色 - 保持不变
     
-    # South China sites - Orange/Red spectrum  
-    'GuangZhou': '#EA580C',     # Orange
-    'Yantian (ZhongTong)': '#F97316',  # Light orange
-    'Chengdu': '#FB923C',       # Lighter orange
-    'Pinghu': '#FDBA74',        # Very light orange
-    'SC_avg': '#7C3AED',        # Purple - South China average, standout
+    # South China sites - 暖色调光谱，形成对比  
+    'GuangZhou': '#F59E0B',     # 琥珀色
+    'Yantian (ZhongTong)': '#8B5CF6',  # 靛蓝
+    'Chengdu': '#10B981',       # 翠绿
+    'Pinghu': '#F97316',        # 橙红
+    'SC_avg': '#7C3AED',        # 紫色 - 保持不变
 }
 
 # Line styles mapping for better line chart distinction
 line_styles = {
     'ELC': 'solid',
-    'GGW': 'dash',
-    'HSK': 'dot',
-    'LFS': 'dashdot',
+    'GGW': 'solid',
+    'HSK': 'solid',
+    'LFS': 'solid',
     'MAP': 'solid',
-    'MTL': 'dash',
-    'STLC': 'dot',
+    'MTL': 'solid',
+    'STLC': 'solid',
     'HK_avg': 'solid',          # Average uses solid line
     'GuangZhou': 'solid',
-    'Yantian (ZhongTong)': 'dash',
-    'Chengdu': 'dot',
-    'Pinghu': 'dashdot',
+    'Yantian (ZhongTong)': 'solid',
+    'Chengdu': 'solid',
+    'Pinghu': 'solid',
     'SC_avg': 'solid',          # Average uses solid line
 }
 
@@ -70,24 +71,26 @@ def make_line_chart_with_data(df_data, week_cols, selected_sites, font_size=16, 
                     marker_sizes.append(6)
             
             # Special styling settings
+            # 特殊样式设置
             if site in ['HK_avg', 'SC_avg']:
                 line_style = dict(
                     color=color_map.get(site, "#DC2626"), 
-                    width=6,  # Extra bold for averages
-                    dash=line_styles.get(site, 'solid')
+                    width=3,  # 减细线条宽度
+                    dash='solid'  # 全部实线
                 )
-                marker_symbol = 'star'
-                marker_line_width = 3
+                marker_symbol = 'diamond'  # 改为菱形更突出
+                marker_line_width = 2
                 opacity = 1.0
             else:
                 line_style = dict(
                     color=color_map.get(site, "#6B7280"), 
-                    width=4,  # Thicker lines for better visibility
-                    dash=line_styles.get(site, 'solid')
+                    width=2.5,  # 更细的线条
+                    dash='solid'  # 全部实线
                 )
                 marker_symbol = 'circle'
-                marker_line_width = 2
+                marker_line_width = 1.5
                 opacity = 0.9
+            
                     
             traces.append(go.Scatter(
                 x=x_labels,
@@ -308,7 +311,17 @@ def make_sidebar():
     from github_storage_manager import GitHubDataManager
     data_manager = GitHubDataManager()
     month_options = data_manager.generate_month_options()
-    current_month = datetime.now().strftime("%Y-%m")
+
+    def get_last_month():
+        """获取上个月的年月字符串"""
+        today = datetime.now()
+        if today.month == 1:
+            last_month = datetime(today.year - 1, 12, 1)
+        else:
+            last_month = datetime(today.year, today.month - 1, 1)
+        return last_month.strftime("%Y-%m")
+
+    current_month = get_last_month()  # 默认显示上个月
     
     # Updated site options list
     all_site_options = [
