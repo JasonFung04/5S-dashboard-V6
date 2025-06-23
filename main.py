@@ -60,6 +60,8 @@ app.layout = html.Div([
     html.Div(id="app-container")
 ])
 
+
+
 # Sidebar control callbacks
 @app.callback(
     [Output('sidebar', 'style'),
@@ -99,20 +101,16 @@ def toggle_sidebar(open_clicks, open_mobile_clicks, close_clicks, is_open):
 
 # Month selection callback
 @app.callback(
-    [Output('data-store', 'data'),
-     Output('current-month', 'data')],
-    [Input('month-selector', 'value')],
-    prevent_initial_call=True
+    Output('data-store', 'data', allow_duplicate=True),
+    Input('current-month', 'data'),
+    prevent_initial_call='initial_duplicate'  # 允许初始调用
 )
-def update_data_from_month_selection(selected_month):
-    if selected_month:
-        df_month = data_manager.load_data(selected_month)
+def initialize_data_on_load(current_month):
+    if current_month:
+        df_month = data_manager.load_data(current_month)
         if df_month is not None:
-            return df_month.to_dict('index'), selected_month
-        else:
-            # 如果没有数据，返回空字典
-            return {}, selected_month
-    return no_update, no_update
+            return df_month.to_dict('index')
+    return {}
 
 # File upload callback
 @app.callback(
