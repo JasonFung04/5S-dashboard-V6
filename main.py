@@ -11,34 +11,11 @@ from components import make_sidebar, make_sidebar_toggle_pc, make_sidebar_toggle
 from components import layout_pc, layout_mobile
 
 # --- Data setup ---
-def load_default_data():
-    data_rows = [
-        ['ELC', 90.18, 80, 76, 4, 91.62, 85.00, 99.11, 85.00],
-        ['GGW', 87.54, 168, 168, 0, 85.00, 95.17, 85.00, 85.00],
-        ['HSK', 85.65, 180, 180, 0, 87.62, 85.00, 85.00, 85.00],
-        ['LFS', 86.28, 300, 296, 4, 85.00, 88.96, 85.00, 86.16],
-        ['MAP', 87.78, 84, 82, 2, 85.00, 85.00, 88.12, 85.00],
-        ['MTL', 90.84, 160, 157, 3, 85.00, 94.70, 98.67, 85.00],
-        ['STLC', 85.00, 160, 154, 6, 85.00, 85.00, 85.00, 85.00],
-        ['HK_avg', 88.50, 150, 148, 2, 85.00, 87.50, 90.00, 88.50],
-        ['GuangZhou', 86.25, 140, 135, 5, 83.00, 87.50, 88.00, 86.50],
-        ['Yantian (ZhongTong)', 89.75, 120, 118, 2, 88.00, 90.50, 91.00, 89.50],
-        ['Chengdu', 84.50, 160, 152, 8, 82.00, 85.00, 86.00, 85.00],
-        ['Pinghu', 87.80, 100, 98, 2, 86.00, 88.50, 89.00, 87.50],
-        ['SC_avg', 87.00, 130, 126, 4, 84.75, 87.88, 88.50, 87.13]
-    ]
-    week_cols = ['Week 1', 'Week 2', 'Week 3', 'Week 4']
-    df = pd.DataFrame(
-        data_rows,
-        columns=['Site', 'Monthly Performance', 'Max/Month', 'Completed', 'Missing'] + week_cols
-    ).set_index('Site')
-    return df, week_cols
 
 # Initialize GitHub data manager
 data_manager = GitHubDataManager()
-df_default, week_cols = load_default_data()
 
-# Ensure default data exists for current month
+# 获取上个月
 def get_last_month():
     """获取上个月的年月字符串"""
     today = datetime.now()
@@ -48,10 +25,8 @@ def get_last_month():
         last_month = datetime(today.year, today.month - 1, 1)
     return last_month.strftime("%Y-%m")
 
-current_year_month = get_last_month()  # 默认显示上个月
+current_year_month = get_last_month()
 
-if not data_manager.data_exists(current_year_month):
-    data_manager.save_data(current_year_month, df_default)
 
 # --- Dash App Setup ---
 app = dash.Dash(__name__, suppress_callback_exceptions=True)
@@ -76,8 +51,8 @@ app.clientside_callback(
 app.layout = html.Div([
     dcc.Interval(id='init-load', interval=200, n_intervals=0, max_intervals=1),
     dcc.Store(id='device-store', data='pc'),
-    dcc.Store(id='data-store', data=df_default.to_dict('index')),
-    dcc.Store(id='week-cols-store', data=week_cols),
+    dcc.Store(id='data-store', data={}),  # 改为空字典，而不是 df_default.to_dict('index')
+    dcc.Store(id='week-cols-store', data=['Week 1', 'Week 2', 'Week 3', 'Week 4']),  # 直接定义
     dcc.Store(id='sidebar-open', data=False),
     dcc.Store(id='selected-sites', data=['HK_avg', 'SC_avg']),  # Default show HK_avg and SC_avg
     dcc.Store(id='selected-gauges', data=['HK_avg', 'SC_avg']),  # Default show HK_avg and SC_avg gauges
@@ -135,8 +110,8 @@ def update_data_from_month_selection(selected_month):
         if df_month is not None:
             return df_month.to_dict('index'), selected_month
         else:
-            # If no data exists for selected month, use default data
-            return df_default.to_dict('index'), selected_month
+            # 如果没有数据，返回空字典
+            return {}, selected_month
     return no_update, no_update
 
 # File upload callback
@@ -156,7 +131,6 @@ def update_data_from_upload(contents, filename, upload_month):
     df_new, message = data_manager.parse_excel_file(contents, filename)
     
     if df_new is not None:
-        # Save data for selected month
         target_month = upload_month if upload_month else current_year_month
         success = data_manager.save_data(target_month, df_new)
         
@@ -243,7 +217,19 @@ def update_quick_selection(hk_clicks, sc_clicks, all_clicks):
 )
 def download_template(n_clicks):
     if n_clicks and n_clicks > 0:
-        template_df = df_default.reset_index()
+        # 创建一个空的模板 DataFrame
+        template_data = {
+            'Site': ['Site1', 'Site2', 'HK_avg', 'SC_avg'],
+            'Monthly Performance': ['', '', '', ''],
+            'Max/Month': ['', '', '', ''],
+            'Completed': ['', '', '', ''],
+            'Missing': ['', '', '', ''],
+            'Week 1': ['', '', '', ''],
+            'Week 2': ['', '', '', ''],
+            'Week 3': ['', '', '', ''],
+            'Week 4': ['', '', '', '']
+        }
+        template_df = pd.DataFrame(template_data)
         
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -289,4 +275,4 @@ def display_layout(device_type, data_dict, week_cols_data, selected_sites, selec
 if __name__ == '__main__':
     # For Render deployment
     port = int(os.environ.get('PORT', 8050))
-    app.run_server(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False)
