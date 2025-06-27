@@ -211,16 +211,17 @@ class GitHubDataManager:
             df_uploaded = df_uploaded.set_index('Site')
             
             # Ensure HK_avg exists, add if missing
+
+
             if 'HK_avg' not in df_uploaded.index:
                 default_row = {col: 0 for col in df_uploaded.columns}
                 df_uploaded.loc['HK_avg'] = default_row
-                print("Added missing HK_avg with default values")
-            
-            # Ensure SC_avg exists, add if missing  
+                print("Added missing Hong Kong Average with default values")  # CHANGED
+
             if 'SC_avg' not in df_uploaded.index:
                 default_row = {col: 0 for col in df_uploaded.columns}
                 df_uploaded.loc['SC_avg'] = default_row
-                print("Added missing SC_avg with default values")
+                print("Added missing South China Average with default values")  # CHANGED
             
             return df_uploaded, "File uploaded successfully!"
             
