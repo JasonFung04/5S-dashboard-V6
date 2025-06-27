@@ -747,12 +747,7 @@ def make_sidebar():
                     'color': '#6B7280',
                     'paddingLeft': '20px'
                 }),
-                html.P("Note: LFS [FRONT] and LFS [BACK] will be automatically merged into LFS", style={
-                    'fontSize': '12px',
-                    'color': '#7C3AED',
-                    'fontStyle': 'italic',
-                    'marginTop': '10px'
-                })
+
             ])
         ], style={
             'padding': '20px',
