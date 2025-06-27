@@ -177,9 +177,11 @@ def update_data_from_upload(contents, filename, upload_month):
     Input('site-selector', 'value'),
     prevent_initial_call=True
 )
+
+
 def update_selected_sites(selected_sites):
     if not selected_sites:
-        return ['HK_avg', 'SC_avg']
+        return ['HK_avg', 'SC_avg']  # Keep internal codes
     # Ensure HK_avg and SC_avg are always displayed
     if 'HK_avg' not in selected_sites:
         selected_sites.append('HK_avg')
@@ -193,9 +195,11 @@ def update_selected_sites(selected_sites):
     Input('gauge-selector', 'value'),
     prevent_initial_call=True
 )
+
+
 def update_selected_gauges(selected_gauges):
     if not selected_gauges:
-        return ['HK_avg', 'SC_avg']
+        return ['HK_avg', 'SC_avg']  # Keep internal codes
     return selected_gauges
 
 # Quick selection callbacks
@@ -215,24 +219,26 @@ def update_quick_selection(hk_clicks, sc_clicks, all_clicks):
     
     trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
     
+    
     if trigger_id == 'select-hk-sites':
-        hk_sites = ['HK_avg', 'ELC', 'GGW', 'HSK', 'LFS', 'MAP', 'MTL', 'STLC']
+        hk_sites = ['HK_avg', 'ELC', 'GGW', 'HSK', 'LFS', 'MAP', 'CS1', 'ST1']  # Updated
         return hk_sites, hk_sites
-    
+
     elif trigger_id == 'select-sc-sites':
-        sc_sites = ['SC_avg', 'GuangZhou', 'Yantian (ZhongTong)', 'Chengdu', 'Pinghu']
+        sc_sites = ['SC_avg', 'GZ1', 'YT1', 'CD1', 'SZ2']  # Updated
         return sc_sites, sc_sites
-    
+
     elif trigger_id == 'select-all-sites':
         all_sites = [
-            'HK_avg', 'SC_avg', 'ELC', 'GGW', 'HSK', 'LFS', 'MAP', 'MTL', 'STLC',
-            'GuangZhou', 'Yantian (ZhongTong)', 'Chengdu', 'Pinghu'
+            'HK_avg', 'SC_avg', 'ELC', 'GGW', 'HSK', 'LFS', 'MAP', 'CS1', 'ST1',  # Updated
+            'GZ1', 'YT1', 'CD1', 'SZ2'  # Updated
         ]
         return all_sites, all_sites
     
     return no_update, no_update
 
 # Template download callback
+# Updated template download callback in main.py
 @app.callback(
     Output('download-template-file', 'data'),
     Input('download-template', 'n_clicks'),
@@ -240,16 +246,35 @@ def update_quick_selection(hk_clicks, sc_clicks, all_clicks):
 )
 def download_template(n_clicks):
     if n_clicks and n_clicks > 0:
+        # Complete list of all warehouse sites
+        all_sites = [
+            'HK_avg',   # Hong Kong Average
+            'SC_avg',   # South China Average
+            # Hong Kong Sites
+            'ELC',
+            'GGW', 
+            'HSK',
+            'LFS',
+            'MAP',
+            'CS1',
+            'ST1',
+            # South China Sites
+            'GZ1',
+            'YT1', 
+            'CD1',
+            'SZ2'
+        ]
+        
         template_data = {
-            'Site': ['Site1', 'Site2', 'HK_avg', 'SC_avg'],
-            'Monthly Performance': ['', '', '', ''],
-            'Max/Month': ['', '', '', ''],
-            'Completed': ['', '', '', ''],
-            'Missing': ['', '', '', ''],
-            'Week 1': ['', '', '', ''],
-            'Week 2': ['', '', '', ''],
-            'Week 3': ['', '', '', ''],
-            'Week 4': ['', '', '', '']
+            'Site': all_sites,
+            'Monthly Performance': [''] * len(all_sites),
+            'Max/Month': [''] * len(all_sites),
+            'Completed': [''] * len(all_sites),
+            'Missing': [''] * len(all_sites),
+            'Week 1': [''] * len(all_sites),
+            'Week 2': [''] * len(all_sites),
+            'Week 3': [''] * len(all_sites),
+            'Week 4': [''] * len(all_sites)
         }
         template_df = pd.DataFrame(template_data)
         
@@ -266,6 +291,7 @@ def download_template(n_clicks):
             base64=True
         )
     return no_update
+
 
 # Main layout callback - Updated to use current-viewing-month
 @app.callback(
