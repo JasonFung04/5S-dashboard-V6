@@ -6,8 +6,26 @@ import plotly.graph_objs as go
 import pandas as pd
 from datetime import datetime
 
+def get_display_name(site_code):
+    """Convert internal site codes to user-friendly display names"""
+    display_names = {
+        'HK_avg': 'Hong Kong Average',
+        'SC_avg': 'South China Average',
+        # Keep other sites as-is for now, can be extended later
+        'MTL': 'CS1',  # if you still have old data
+        'STLC': 'ST1',  # if you still have old data
+        'GuangZhou': 'GZ1',  # if you still have old data
+        'Yantian (ZhongTong)': 'YT1',  # if you still have old data
+        'Chengdu': 'CD1',  # if you still have old data
+        'Pinghu': 'SZ2'  # if you still have old data
+    }
+    return display_names.get(site_code, site_code)
+
 # Improved color scheme with clear distinction between HK and SC sites
 # 改进的颜色方案 - 更清晰的色彩区分
+
+
+
 color_map = {
     # Hong Kong sites - 冷色调光谱，更易区分
     'ELC': '#1E40AF',           # 深蓝
@@ -15,15 +33,15 @@ color_map = {
     'HSK': '#059669',           # 绿色
     'LFS': '#DC2626',           # 红色
     'MAP': '#7C3AED',           # 紫色
-    'MTL': '#EA580C',           # 橙色
-    'STLC': '#BE185D',          # 玫红
+    'CS1': '#EA580C',           # 橙色 (was MTL)
+    'ST1': '#BE185D',           # 玫红 (was STLC)
     'HK_avg': '#DC2626',        # 红色 - 保持不变
     
     # South China sites - 暖色调光谱，形成对比  
-    'GuangZhou': '#F59E0B',     # 琥珀色
-    'Yantian (ZhongTong)': '#8B5CF6',  # 靛蓝
-    'Chengdu': '#10B981',       # 翠绿
-    'Pinghu': '#F97316',        # 橙红
+    'GZ1': '#F59E0B',           # 琥珀色 (was GuangZhou)
+    'YT1': '#8B5CF6',           # 靛蓝 (was Yantian (ZhongTong))
+    'CD1': '#10B981',           # 翠绿 (was Chengdu)
+    'SZ2': '#F97316',           # 橙红 (was Pinghu)
     'SC_avg': '#7C3AED',        # 紫色 - 保持不变
 }
 
@@ -118,7 +136,7 @@ def make_line_chart_with_data(df_data, week_cols, selected_sites, font_size=16, 
                 x=x_labels,
                 y=yvals,
                 mode='lines+markers',
-                name=site,
+                name=get_display_name(site),  # CHANGED: was just 'site'
                 line=line_style,
                 marker=dict(
                     color=marker_colors, 
@@ -128,7 +146,8 @@ def make_line_chart_with_data(df_data, week_cols, selected_sites, font_size=16, 
                 ),
                 opacity=opacity,
                 connectgaps=True,
-                hovertemplate="<b>%{fullData.name}</b><br>%{x}<br>Score: %{y:.1f}%<extra></extra>",
+
+                hovertemplate=format_hover_template(site),
             ))
     
     fig = go.Figure(traces)
@@ -196,8 +215,20 @@ def make_line_chart_with_data(df_data, week_cols, selected_sites, font_size=16, 
 def make_gauge(siteinfo, width=180, font_small=12):
     """Create gauge component"""
 
+    # Add this mapping at the beginning
+    display_names = {
+        'HK_avg': 'Hong Kong Average',
+        'SC_avg': 'South China Average'
+    }
+
+
     # 检查是否有数据
     if not siteinfo or 'Monthly Performance' not in siteinfo:
+
+        value = siteinfo['Monthly Performance']
+        original_site_name = siteinfo['Site']
+        site_name = get_display_name(original_site_name)  # CHANGED: Use display name
+
         return html.Div([
             html.Div("No Data", style={
                 'textAlign': 'center',
@@ -223,7 +254,7 @@ def make_gauge(siteinfo, width=180, font_small=12):
 
 
     value = siteinfo['Monthly Performance']
-    site_name = siteinfo['Site']
+    site_name = display_names.get(siteinfo['Site'], siteinfo['Site'])
     
     # Determine color based on score
     if value >= 90:
@@ -375,22 +406,23 @@ def make_sidebar():
     default_month = get_last_month()  # Default to last month
     
     # Updated site options list
+
     all_site_options = [
-        {'label': 'HK_avg (Hong Kong Average)', 'value': 'HK_avg'},
-        {'label': 'SC_avg (South China Average)', 'value': 'SC_avg'},
+        {'label': 'Hong Kong Average', 'value': 'HK_avg'},
+        {'label': 'South China Average', 'value': 'SC_avg'},
         {'label': '--- Hong Kong Sites ---', 'value': '', 'disabled': True},
         {'label': 'ELC', 'value': 'ELC'},
         {'label': 'GGW', 'value': 'GGW'},
         {'label': 'HSK', 'value': 'HSK'},
         {'label': 'LFS', 'value': 'LFS'},
         {'label': 'MAP', 'value': 'MAP'},
-        {'label': 'MTL', 'value': 'MTL'},
-        {'label': 'STLC', 'value': 'STLC'},
+        {'label': 'CS1', 'value': 'CS1'},  # was MTL
+        {'label': 'ST1', 'value': 'ST1'},  # was STLC
         {'label': '--- South China Sites ---', 'value': '', 'disabled': True},
-        {'label': 'GuangZhou', 'value': 'GuangZhou'},
-        {'label': 'Yantian (ZhongTong)', 'value': 'Yantian (ZhongTong)'},
-        {'label': 'Chengdu', 'value': 'Chengdu'},
-        {'label': 'Pinghu', 'value': 'Pinghu'}
+        {'label': 'GZ1', 'value': 'GZ1'},  # was GuangZhou
+        {'label': 'YT1', 'value': 'YT1'},  # was Yantian (ZhongTong)
+        {'label': 'CD1', 'value': 'CD1'},  # was Chengdu
+        {'label': 'SZ2', 'value': 'SZ2'}   # was Pinghu
     ]
     
     return html.Div([
@@ -820,9 +852,11 @@ def prepare_ranking_data(df_data, selected_sites):
     
     # Sort data by Monthly Performance for ranking
     df_sorted = filtered_df.sort_values(by="Monthly Performance", ascending=False)
+
+
     rank_data = pd.DataFrame({
         'Rank': range(1, len(df_sorted) + 1),
-        'Site': df_sorted.index,
+        'Site': [get_display_name(site) for site in df_sorted.index],  # CHANGED
         'Score': df_sorted['Monthly Performance'].round(2)
     })
     
@@ -840,9 +874,11 @@ def prepare_missing_data(df_data, selected_sites):
     if filtered_df.empty:
         return pd.DataFrame(columns=['Rank', 'Site', 'Missing'])
     
+
+    sorted_sites = filtered_df.sort_values(by="Missing", ascending=True).index
     missing_clock_data = pd.DataFrame({
         'Rank': range(1, len(filtered_df) + 1),
-        'Site': filtered_df.sort_values(by="Missing", ascending=True).index,
+        'Site': [get_display_name(site) for site in sorted_sites],  # CHANGED
         'Missing': filtered_df.sort_values(by="Missing", ascending=True)["Missing"].values
     })
     
@@ -955,7 +991,7 @@ def layout_pc(df_data, week_cols, selected_sites, selected_gauges, current_month
                         'fontSize': '1.4rem',
                         'fontFamily': 'Arial, sans-serif'
                     }),
-                    html.P("Default shows HK_avg and SC_avg. You can add more sites in the data manager", style={
+                    html.P("Default shows Hong Kong Average and South China Average. You can add more sites in the data manager", style={
                         'margin': '0 0 15px 0',
                         'color': '#6B7280',
                         'fontSize': '0.9rem',
@@ -975,7 +1011,7 @@ def layout_pc(df_data, week_cols, selected_sites, selected_gauges, current_month
             
             # Gauge Chart Area
             html.Div([
-                html.H2("Site Performance Overview", style={
+                html.H2("5S Site Performance", style={
                     'textAlign': 'center',
                     'color': '#1F2937',
                     'fontSize': '1.8rem',
@@ -1039,13 +1075,13 @@ def layout_pc(df_data, week_cols, selected_sites, selected_gauges, current_month
                             "fontWeight": "bold"
                         },
                         {
-                            "if": {"filter_query": "{Site} = 'HK_avg'"},
+                            "if": {"filter_query": "{Site} = 'Hong Kong Average'"},
                             "backgroundColor": "#FEE2E2",
                             "color": "#DC2626",
                             "fontWeight": "bold"
                         },
                         {
-                            "if": {"filter_query": "{Site} = 'SC_avg'"},
+                            "if": {"filter_query": "{Site} = 'South China Average'"},
                             "backgroundColor": "#F3E8FF",
                             "color": "#7C3AED",
                             "fontWeight": "bold"
@@ -1109,13 +1145,13 @@ def layout_pc(df_data, week_cols, selected_sites, selected_gauges, current_month
                             "fontWeight": "bold"
                         },
                         {
-                            "if": {"filter_query": "{Site} = 'HK_avg'"},
+                            "if": {"filter_query": "{Site} = 'Hong Kong Average'"},
                             "backgroundColor": "#FEE2E2",
                             "color": "#DC2626",
                             "fontWeight": "bold"
                         },
                         {
-                            "if": {"filter_query": "{Site} = 'SC_avg'"},
+                            "if": {"filter_query": "{Site} = 'South China Average'"},
                             "backgroundColor": "#F3E8FF",
                             "color": "#7C3AED",
                             "fontWeight": "bold"
@@ -1267,7 +1303,7 @@ def layout_mobile(df_data, week_cols, selected_sites, selected_gauges, current_m
         
         # Gauge Charts
         html.Div([
-            html.H2("Site Performance", style={
+            html.H2("5S Site Performance", style={
                 'textAlign': 'center',
                 'color': '#1F2937',
                 'fontSize': '4.5vw',
@@ -1337,13 +1373,13 @@ def layout_mobile(df_data, week_cols, selected_sites, selected_gauges, current_m
                         "fontWeight": "bold"
                     },
                     {
-                        "if": {"filter_query": "{Site} = 'HK_avg'"},
+                        "if": {"filter_query": "{Site} = 'Hong Kong Average'"},
                         "backgroundColor": "#FEE2E2",
                         "color": "#DC2626",
                         "fontWeight": "bold"
                     },
                     {
-                        "if": {"filter_query": "{Site} = 'SC_avg'"},
+                        "if": {"filter_query": "{Site} = 'South China Average'"},
                         "backgroundColor": "#F3E8FF",
                         "color": "#7C3AED",
                         "fontWeight": "bold"
@@ -1409,13 +1445,13 @@ def layout_mobile(df_data, week_cols, selected_sites, selected_gauges, current_m
                         "fontWeight": "bold"
                     },
                     {
-                        "if": {"filter_query": "{Site} = 'HK_avg'"},
+                        "if": {"filter_query": "{Site} = 'Hong Kong Average'"},
                         "backgroundColor": "#FEE2E2",
                         "color": "#DC2626",
                         "fontWeight": "bold"
                     },
                     {
-                        "if": {"filter_query": "{Site} = 'SC_avg'"},
+                        "if": {"filter_query": "{Site} = 'South China Average'"},
                         "backgroundColor": "#F3E8FF",
                         "color": "#7C3AED",
                         "fontWeight": "bold"
@@ -1440,3 +1476,8 @@ def layout_mobile(df_data, week_cols, selected_sites, selected_gauges, current_m
         'minHeight': '100vh',
         'fontFamily': 'Arial, sans-serif'
     })
+
+def format_hover_template(site_code):
+    """Format hover template with display name"""
+    display_name = get_display_name(site_code)
+    return f"<b>{display_name}</b><br>%{{x}}<br>Score: %{{y:.1f}}%<extra></extra>"
