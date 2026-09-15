@@ -35,6 +35,8 @@ color_map = {
     'MAP': '#7C3AED',           # 紫色
     'CS1': '#EA580C',           # 橙色 (was MTL)
     'ST1': '#BE185D',           # 玫红 (was STLC)
+    'CML': '#0D9488',           # 藍綠色
+    'TTW': '#4338CA',           # 靛藍色
     'HK_avg': '#DC2626',        # 红色 - 保持不变
     
     # South China sites - 暖色调光谱，形成对比  
@@ -418,6 +420,8 @@ def make_sidebar():
         {'label': 'MAP', 'value': 'MAP'},
         {'label': 'CS1', 'value': 'CS1'},  # was MTL
         {'label': 'ST1', 'value': 'ST1'},  # was STLC
+        {'label': 'CML', 'value': 'CML'},
+        {'label': 'TTW', 'value': 'TTW'},
         {'label': '--- South China Sites ---', 'value': '', 'disabled': True},
         {'label': 'GZ1', 'value': 'GZ1'},  # was GuangZhou
         {'label': 'YT1', 'value': 'YT1'},  # was Yantian (ZhongTong)

@@ -221,7 +221,7 @@ def update_quick_selection(hk_clicks, sc_clicks, all_clicks):
     
     
     if trigger_id == 'select-hk-sites':
-        hk_sites = ['HK_avg', 'ELC', 'GGW', 'HSK', 'LFS', 'MAP', 'CS1', 'ST1']  # Updated
+        hk_sites = ['HK_avg', 'ELC', 'GGW', 'HSK', 'LFS', 'MAP', 'CS1', 'ST1', 'CML', 'TTW']  # Updated
         return hk_sites, hk_sites
 
     elif trigger_id == 'select-sc-sites':
@@ -230,7 +230,7 @@ def update_quick_selection(hk_clicks, sc_clicks, all_clicks):
 
     elif trigger_id == 'select-all-sites':
         all_sites = [
-            'HK_avg', 'SC_avg', 'ELC', 'GGW', 'HSK', 'LFS', 'MAP', 'CS1', 'ST1',  # Updated
+            'HK_avg', 'SC_avg', 'ELC', 'GGW', 'HSK', 'LFS', 'MAP', 'CS1', 'ST1', 'CML', 'TTW',  # Updated
             'GZ1', 'YT1', 'CD1', 'SZ2'  # Updated
         ]
         return all_sites, all_sites
@@ -252,15 +252,17 @@ def download_template(n_clicks):
             'SC_avg',   # South China Average
             # Hong Kong Sites
             'ELC',
-            'GGW', 
+            'GGW',
             'HSK',
             'LFS',
             'MAP',
             'CS1',
             'ST1',
+            'CML',
+            'TTW',
             # South China Sites
             'GZ1',
-            'YT1', 
+            'YT1',
             'CD1',
             'SZ2'
         ]
